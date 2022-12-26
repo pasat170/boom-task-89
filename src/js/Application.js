@@ -2,36 +2,65 @@ import EventEmitter from "eventemitter3";
 import image from "../images/planet.svg";
 
 export default class Application extends EventEmitter {
-  static get events() {
-    return {
-      READY: "ready",
-    };
-  }
-
-  constructor() {
-    super();
-
-    const box = document.createElement("div");
-    box.classList.add("box");
-    box.innerHTML = this._render({
-      name: "Placeholder",
-      terrain: "placeholder",
-      population: 0,
-    });
-
-    document.body.querySelector(".main").appendChild(box);
-
-    this.emit(Application.events.READY);
+    static get events() {
+        return {
+            READY: "ready",
+        };
     }
 
+    constructor() {
+        super();
+
+        this._loading = document.querySelector(".progress");
+        this.apiUrl = "https://swapi.boom.dev/api/planets";
+        this._startLoading();
+        this._create();
+        this.emit(Application.events.READY);
+
+    }
     async _load() {
-        return await fetch('https://swapi.boom.dev/api/planets').then((response) => {
+        return await fetch(this.apiUrl).then((response) => {
             return response.json();
         });
     }
 
-  _render({ name, terrain, population }) {
-    return `
+    _startLoading() {
+        this._loading.style.display = 'block';
+    }
+
+    _stopLoading() {
+        this._loading.style.display = 'none';
+    }
+
+    _checkNext() {
+        this._load().then((response) => {
+            if (response.next) {
+                console.log(response.next);
+                this.apiUrl = response.next;
+                this._create();
+            }
+        });
+    }
+
+    _create() {
+        this._load().then((response) => {
+            response.results.forEach((element) => {
+                const box = document.createElement("div");
+                box.classList.add("box");
+                box.innerHTML = this._render({
+                    name: element.name,
+                    terrain: element.terrain,
+                    population: element.population,
+                });
+                this._stopLoading();
+                document.body.querySelector(".main").appendChild(box);
+            });
+        });
+        this._checkNext();
+    }
+
+    _render({ name, terrain, population }) {
+        return `
 <article class="media">
   <div class="media-left">
     <figure class="image is-64x64">
@@ -49,5 +78,6 @@ export default class Application extends EventEmitter {
   </div>
 </article>
     `;
-  }
+    }
+
 }
