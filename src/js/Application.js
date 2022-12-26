@@ -22,7 +22,13 @@ export default class Application extends EventEmitter {
     document.body.querySelector(".main").appendChild(box);
 
     this.emit(Application.events.READY);
-  }
+    }
+
+    async _load() {
+        return await fetch('https://swapi.boom.dev/api/planets').then((response) => {
+            return response.json();
+        });
+    }
 
   _render({ name, terrain, population }) {
     return `
